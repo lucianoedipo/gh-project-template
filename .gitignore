@@ -1,0 +1,18 @@
+# Logs
+logs/
+*.log
+
+# Arquivos de configuração local
+.env
+.env.local
+
+# Dados específicos do usuário
+logs/projects/
+
+# Arquivos temporários
+temp/
+tmp/
+*.tmp
+
+# Diretórios específicos do Visual Studio Code
+.vscode/

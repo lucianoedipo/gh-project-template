@@ -1,10 +1,9 @@
 {
+  "$schema": "../schemas/project-schema.schema.json",
   "project_template": "SCRUM-DDSS-v1",
   "iteration": {
     "name": "Sprint",
-    "duration": 14,
-    "startDay": "monday",
-    "timezone": "America/Sao_Paulo"
+    "duration": 14
   },
   "fields": [
     {
@@ -100,22 +99,10 @@
         }
       ]
     },
-    {
-      "name": "PF Estimado",
-      "type": "number"
-    },
-    {
-      "name": "PF Validado",
-      "type": "number"
-    },
-    {
-      "name": "Critérios de Aceitação",
-      "type": "text"
-    },
-    {
-      "name": "Definição de Pronto",
-      "type": "text"
-    },
+    { "name": "PF Estimado", "type": "number" },
+    { "name": "PF Validado", "type": "number" },
+    { "name": "Critérios de Aceitação", "type": "text" },
+    { "name": "Definição de Pronto", "type": "text" },
     {
       "name": "Validação do PO",
       "type": "single_select",
@@ -137,22 +124,10 @@
         }
       ]
     },
-    {
-      "name": "Evidência de Teste",
-      "type": "text"
-    },
-    {
-      "name": "Regra de Negócio",
-      "type": "text"
-    },
-    {
-      "name": "Dependências",
-      "type": "text"
-    },
-    {
-      "name": "Sprint (Issue ID)",
-      "type": "text"
-    }
+    { "name": "Evidência de Teste", "type": "text" },
+    { "name": "Regra de Negócio", "type": "text" },
+    { "name": "Dependências", "type": "text" },
+    { "name": "Sprint (Issue ID)", "type": "text" }
   ],
   "columns": [
     "📋 Backlog do Produto",
@@ -166,7 +141,8 @@
     {
       "name": "📅 Sprint Atual",
       "group_by": "Status",
-      "filters": ["Sprint = atual"],
+      "sort_by": [{ "field": "Sprint (Issue ID)", "direction": "asc" }],
+      "filters": ["Sprint (Issue ID) = atual"],
       "fields": [
         "Tipo de Item",
         "PF Estimado",
@@ -176,17 +152,20 @@
     },
     {
       "name": "📈 Métricas de Entrega",
+      "sort_by": [{ "field": "PF Validado", "direction": "desc" }],
       "filters": ["PF Validado != null"],
-      "fields": ["Sprint", "PF Estimado", "PF Validado", "Status"]
+      "fields": ["Sprint (Issue ID)", "PF Estimado", "PF Validado", "Status"]
     },
     {
       "name": "🔍 Itens Pendentes de Validação",
+      "sort_by": [{ "field": "Status", "direction": "asc" }],
       "filters": ["Validação do PO = 🕗 Pendente"],
       "fields": ["Status", "Critérios de Aceitação", "Evidência de Teste"]
     },
     {
       "name": "🗺️ Visão por Épico",
       "group_by": "Tipo de Item",
+      "sort_by": [{ "field": "PF Estimado", "direction": "desc" }],
       "filters": ["Tipo de Item = Épico"],
       "fields": ["Status", "PF Estimado"]
     }

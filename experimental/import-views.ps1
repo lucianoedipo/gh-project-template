@@ -1,7 +1,11 @@
 param(
     [string]$projectId,
-    [string]$schemaPath = ".\templates\project-schema.scrum-ddss.v1.json"
+    [string]$schemaPath = "..\templates\scrum-ddss-v1.template.json"
 )
+
+# Script experimental: aguardando aderência da API do GitHub para automação de views
+# Não execute em produção. Consulte README_import-views.md para detalhes.
+
 
 if (-not $projectId) {
     Write-Error "O ID do projeto é obrigatório. Use: .\import-status-columns.ps1 -projectId SEU_ID_AQUI"
@@ -64,8 +68,8 @@ Write-Host "✅ Campo 'Status' encontrado com ID: $statusFieldId"
 # 3. Preparar as novas opções a partir do schema
 $newOptions = $statusFieldSchema.options | ForEach-Object {
     @{
-        name  = $_.name
-        color = $_.color
+        name        = $_.name
+        color       = $_.color
         description = $_.description
     }
 }
@@ -95,6 +99,21 @@ mutation($fieldId: ID!, $options: [ProjectV2SingleSelectFieldOptionInput!]) {
 }
 '@
 
+# Limpar as opções existentes primeiro para evitar duplicatas
+Write-Host "🧹 Limpando opções existentes para evitar duplicatas..."
+
+# Primeiro vamos usar uma mutation para atualizar o campo com um array vazio de opções
+$clearPayload = @{
+    query     = $updateOptionsMutation
+    variables = @{
+        fieldId = $statusFieldId
+        options = @()
+    }
+} | ConvertTo-Json -Depth 10 -Compress
+
+$clearResult = $clearPayload | gh api graphql --input -
+
+# Agora adicionamos as novas opções
 $updatePayload = @{
     query     = $updateOptionsMutation
     variables = @{
@@ -113,7 +132,10 @@ if ($updateResult -like '*"projectV2Field":*') {
     $updatedOptions = ($updateResult | ConvertFrom-Json).data.updateProjectV2Field.projectV2Field.options
     Write-Host "Opções atuais:"
     $updatedOptions | ForEach-Object { Write-Host "  - $($_.name) ($($_.color))" }
-} else {
+}
+else {
     Write-Error "❌ Falha ao atualizar as opções do campo 'Status'."
     Write-Host $updateResult
 }
+
+

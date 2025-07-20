@@ -1,16 +1,19 @@
-# Modelo de Projeto SCRUM-DDSS-v1 para GitHub Projects
+# Template SCRUM-DDSS-v1 para GitHub Projects
 
-Este repositório define a estrutura padronizada do **Projeto Ágil baseado em Scrum híbrido** da **Divisão de Desenvolvimento e Sustentação de Sistemas (DDSS/CGTI/ANPD)**, conforme definido no documento oficial do Processo de Desenvolvimento de Software (PDS v1.0, jan/2025).
+Este template implementa a estrutura de projeto ágil baseada no modelo SCRUM-DDSS-v1, utilizada pela **Divisão de Desenvolvimento e Sustentação de Sistemas (DDSS/CGTI/ANPD)**. Ele serve como referência para automação e padronização de projetos institucionais, conforme o Processo de Desenvolvimento de Software (PDS v1.0, jan/2025).
 
 ## 🎯 Objetivo
 
-Formalizar a estrutura de campos, colunas e visualizações para o uso institucional de GitHub Projects v2, garantindo alinhamento com:
+Padronizar campos, colunas e visualizações para uso institucional do GitHub Projects v2, alinhado ao Scrum, Pontos de Função (PF) e diretrizes da ANPD.
 
-- Princípios do Scrum
-- Práticas contratuais com métrica de Pontos de Função (PF)
-- Normativas do setor público e diretrizes da ANPD
+Este template pode ser reutilizado e customizado para outros times, projetos ou metodologias. Basta adaptar o arquivo de schema JSON e os scripts conforme a necessidade.
 
----
+> **Exemplo de reuso:**
+>
+> - Para Kanban, basta alterar o campo de iteração e as colunas.
+> - Para projetos sem PF, remova os campos relacionados.
+
+Consulte os scripts e o schema para criar novas combinações!
 
 ## ⚙️ Estrutura Geral
 
@@ -18,10 +21,8 @@ Formalizar a estrutura de campos, colunas e visualizações para o uso instituci
 
 - **Nome**: Sprint
 - **Duração**: 14 dias corridos
-- **Início**: Segunda-feira
-- **Timezone**: America/Sao_Paulo
 
----
+> O campo de iteração é criado automaticamente pelo script, conforme definido no schema. Outros parâmetros como início e timezone devem ser ajustados manualmente no GitHub, se necessário.
 
 ## 🧱 Campos Personalizados
 
@@ -105,7 +106,7 @@ IDs ou links de issues bloqueadoras.
 
 Representa a Sprint à qual o item pertence (por referência manual à issue de Sprint).
 
----
+> **Observação:** O campo de iteração nativo do GitHub pode ser usado em paralelo ou substituído por esse campo manual, conforme a necessidade do projeto.
 
 ## 🧾 Colunas do Projeto
 
@@ -147,10 +148,20 @@ Representa a Sprint à qual o item pertence (por referência manual à issue de 
 ## 📌 Decisões Estruturais
 
 - 🔒 **Não usamos Story Points**: o processo da DDSS adota **Pontos de Função (PF)** como métrica exclusiva de esforço e faturamento.
-- 🌀 **Sprint é representada como uma issue**, com checklist de itens. Não faz parte do campo `Tipo de Item`.
+- 🌀 **Sprint pode ser representada como uma issue ou pelo campo de iteração nativo**. Não faz parte do campo `Tipo de Item`.
 - ✅ A vinculação de itens a sprints é feita por **campo manual (`Sprint (Issue ID)`)** ou **Iteration nativa**.
 
 ---
+
+## ♻️ Reuso e Customização
+
+Este template é totalmente adaptável. Para criar um novo modelo:
+
+1. Edite o arquivo de schema JSON conforme sua metodologia.
+2. Ajuste os scripts para importar os campos e colunas desejados.
+3. Consulte a documentação dos módulos para exemplos de uso.
+
+> **Dica:** Você pode criar múltiplos arquivos de schema e scripts para diferentes tipos de projeto e alternar conforme a demanda.
 
 ## 📚 Referência
 
