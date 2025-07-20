@@ -226,12 +226,17 @@ function Save-ProjectInfo {
         createdAt = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
     } | ConvertTo-Json
 
+    # Gerar timestamp para o nome do arquivo
+    $timestamp = (Get-Date).ToString("yyyy-MM-dd-HHmmss")
+    
     # Salvar em diretório de logs (que estará no .gitignore)
     $logsDir = ".\logs\projects"
     if (-not (Test-Path $logsDir)) {
         New-Item -ItemType Directory -Path $logsDir -Force | Out-Null
     }
-    $logFile = Join-Path $logsDir "$owner-$($projectNumber).json"
+    
+    # Adicionar timestamp ao nome do arquivo
+    $logFile = Join-Path $logsDir "$owner-$($projectNumber)-$timestamp.json"
     $projectConfig | Set-Content -Path $logFile
 
     Write-Host "`n💾 Informações do projeto salvas em: $logFile"

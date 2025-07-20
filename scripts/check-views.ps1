@@ -3,6 +3,10 @@ param(
     [string]$schemaPath = ""
 )
 
+# Importar módulos
+$modulesPath = Join-Path $PSScriptRoot "..\modules"
+Import-Module (Join-Path $modulesPath "SchemaManager.psm1") -Force
+
 if (-not $projectId) {
     Write-Error "O ID do projeto é obrigatório. Use: .\check-views.ps1 -projectId SEU_ID_AQUI"
     return
@@ -10,12 +14,10 @@ if (-not $projectId) {
 
 Write-Host "🚀 Iniciando a verificação de views para o projeto: $projectId"
 
-# 1. Ler o schema
-if (-not (Test-Path $schemaPath)) {
-    Write-Error "Arquivo de schema não encontrado em: $schemaPath"
-    return
-}
-$schema = Get-Content -Path $schemaPath | ConvertFrom-Json
+# Carregar schema
+$schemaInfo = Get-ProjectSchema -schemaPath $schemaPath
+if (-not $schemaInfo) { return }
+$schema = $schemaInfo.Schema
 $viewsSchema = $schema.views
 
 # 2. Query para buscar todos os campos e views existentes para mapeamento
@@ -44,12 +46,10 @@ query GetProjectData($projectId: ID!) {
 
 $queryPayload = @{ query = $getProjectDataQuery; variables = @{ projectId = $projectId } } | ConvertTo-Json
 Write-Host "🔍 Mapeando campos e views existentes no projeto..."
-$projectData = $queryPayload | gh api graphql --input - | ConvertFrom-Json
+$projectData = $queryPayload | gh api graphql --input - 2>$null | ConvertFrom-Json
 
 if ($null -eq $projectData.data.node) {
-    Write-Error "❌ Falha ao buscar dados do projeto. Verifique o ID do projeto e suas permissões."
-    Write-Host "Resposta da API:"
-    Write-Host ($projectData | ConvertTo-Json -Depth 5)
+    Write-Host "❌ Falha ao buscar dados do projeto. Verifique o ID do projeto e suas permissões." -ForegroundColor Red
     return
 }
 
@@ -90,7 +90,9 @@ foreach ($item in $viewReport) {
 }
 Write-Host "===================="
 
+$docsPath = Join-Path $PSScriptRoot "..\docs\criar-views-manual.md"
 Write-Host "`n🔔 Verificação concluída!"
 Write-Host "  • Para instruções detalhadas sobre como criar as views manualmente, consulte:"
-Write-Host "    .\docs\criar-views-manual.md"
+Write-Host "    $docsPath"
+
 

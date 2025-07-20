@@ -1,6 +1,6 @@
 # Armazena todas as consultas GraphQL usadas pelo script
 
-# Criação de campo genérico
+# Definindo variáveis no escopo de script com prefixo para evitar conflitos
 $script:createFieldMutation = @'
 mutation CreateField($input: CreateProjectV2FieldInput!) {
   createProjectV2Field(input: $input) {
@@ -15,14 +15,12 @@ mutation CreateField($input: CreateProjectV2FieldInput!) {
         name
         dataType
       }
-      # Add other field types if your schema supports them (e.g., ProjectV2Field)
       __typename
     }
   }
 }
 '@
 
-# Consulta de campos existentes
 $script:getFieldsQuery = @'
 query GetFields($projectId: ID!) {
   node(id: $projectId) {
@@ -48,7 +46,6 @@ query GetFields($projectId: ID!) {
                 startDay
             }
           }
-          # Add other field types if your schema supports them
           __typename
         }
       }
@@ -57,7 +54,6 @@ query GetFields($projectId: ID!) {
 }
 '@
 
-# Adicionar opção a um campo de seleção única
 $script:addOptionMutation = @'
 mutation AddOption($fieldId: ID!, $name: String!, $description: String!, $color: ProjectV2SingleSelectFieldOptionColor!) {
   addProjectV2SingleSelectFieldOption(input: {
@@ -74,7 +70,6 @@ mutation AddOption($fieldId: ID!, $name: String!, $description: String!, $color:
 }
 '@
 
-# Criar uma iteração (sprint)
 $script:createIterationMutation = @'
 mutation CreateIteration($iterationFieldId: ID!, $title: String!, $startDate: Date!, $duration: Int!) {
   createProjectV2Iteration(input: {
@@ -93,15 +88,13 @@ mutation CreateIteration($iterationFieldId: ID!, $title: String!, $startDate: Da
 }
 '@
 
-# Criar campo de iteração
 $script:createIterationFieldMutation = @'
-mutation CreateIterationField($projectId: ID!, $name: String!, $duration: Int!, $startDay: ProjectV2IterationFieldStartDay!) {
+mutation CreateIterationField($projectId: ID!, $name: String!, $duration: Int!) {
   createProjectV2IterationField(input: {
     projectId: $projectId,
     name: $name,
     configuration: {
-      duration: $duration,
-      startDay: $startDay # Mapeia para o enum GraphQL
+      duration: $duration
     }
   }) {
     projectV2Field {
@@ -114,7 +107,6 @@ mutation CreateIterationField($projectId: ID!, $name: String!, $duration: Int!, 
 }
 '@
 
-# Query para encontrar o campo Status no projeto
 $script:findStatusFieldQuery = @'
 query($projectId: ID!) {
   node(id: $projectId) {
@@ -134,7 +126,6 @@ query($projectId: ID!) {
 }
 '@
 
-# Mutation para atualizar as opções do campo Status
 $script:updateStatusOptionsMutation = @'
 mutation($fieldId: ID!, $options: [ProjectV2SingleSelectFieldOptionInput!]) {
   updateProjectV2Field(
@@ -157,3 +148,6 @@ mutation($fieldId: ID!, $options: [ProjectV2SingleSelectFieldOptionInput!]) {
   }
 }
 '@
+
+# Garantir que todas as consultas sejam exportadas
+Export-ModuleMember -Variable script:*

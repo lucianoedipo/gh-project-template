@@ -1,5 +1,12 @@
 # Funções para gerenciar campos regulares
 
+# Importar o módulo de consultas GraphQL e utilidades
+$graphqlModulePath = Join-Path $PSScriptRoot "graphql-queries.psm1"
+Import-Module $graphqlModulePath -Force
+
+$utilsModulePath = Join-Path $PSScriptRoot "utils.psm1"
+Import-Module $utilsModulePath -Force
+
 function Add-CustomFields {
     param(
         [Array]$fields,
@@ -40,21 +47,24 @@ function Add-CustomFields {
                 $fieldInput.dataType = "TEXT"
             }
             default {
-                Write-Warning "⚠️ Tipo de campo desconhecido ou não suportado para criação via API: $($field.type). Campo: $($field.name)"
+                Write-Warning "⚠️ Tipo de campo desconhecido ou não suportado: $($field.type). Campo: $($field.name)"
                 continue
             }
         }
 
-        Create-Field -fieldInput $fieldInput -field $field
+        # Renomeado para usar verbo aprovado
+        Add-ProjectField -fieldInput $fieldInput -field $field
     }
 }
 
-function Create-Field {
+# Renomeada de Create-Field para Add-ProjectField (verbo aprovado)
+function Add-ProjectField {
     param(
         [hashtable]$fieldInput,
         [PSCustomObject]$field
     )
 
+    # Remover a verificação redundante e usar diretamente a consulta do módulo importado
     $createPayload = @{
         query     = $script:createFieldMutation
         variables = @{ input = $fieldInput }
@@ -66,7 +76,7 @@ function Create-Field {
         $response = $createPayload | gh api graphql --input - --header "Content-Type: application/json" 2>&1
         
         # Extrair e processar o JSON da resposta
-        $resultObj = Process-GhApiResponse -response $response
+        $resultObj = ConvertFrom-GhApiResponse -response $response
         
         if ($resultObj -and $resultObj.data.createProjectV2Field.projectV2Field) {
             $createdFieldName = $resultObj.data.createProjectV2Field.projectV2Field.name
@@ -86,34 +96,47 @@ function Create-Field {
                 throw [System.Exception]::new("Name has already been taken")
             }
             else {
-                Write-Warning "⚠️ Erro retornado pela API: $errorMsg"
-                Write-Host "   Continuando com próximos campos..."
+                Write-Warning "⚠️ Erro ao criar campo '$($field.name)': $errorMsg"
             }
         }
         else {
-            Write-Warning "⚠️ Não foi possível processar a resposta da API"
-            Write-Host "   Resposta bruta: $response"
+            Write-Warning "⚠️ Não foi possível processar a resposta da API para o campo '$($field.name)'"
+            Write-Verbose "Resposta bruta: $response"
         }
     }
     catch {
         # Lidar com campo já existente
         if ($_.Exception.Message -like '*Name has already been taken*') {
-            Write-Host "⚠️ Campo '$($field.name)' já existe. Verificando opções (se for single_select)..." -ForegroundColor Yellow
-            Handle-ExistingField -projectId $fieldInput.projectId -field $field
+            # Para campos single_select, verificamos as opções
+            if ($field.type -eq "single_select") {
+                Write-Host "⚠️ Campo '$($field.name)' já existe. Verificando opções..." -ForegroundColor Yellow
+                Update-ExistingField -projectId $fieldInput.projectId -field $field
+            } 
+            else {
+                # Para outros tipos, apenas informamos que o campo já existe
+                Write-Host "ℹ️ Campo '$($field.name)' (Tipo: $($field.type)) já existe." -ForegroundColor Cyan
+            }
         }
         else {
-            Write-Error "❌ Erro inesperado ao criar campo '$($field.name)': $($_.Exception.Message)"
-            Write-Host "Resposta GH CLI (se houver):`n$response"
+            Write-Error "❌ Erro ao criar campo '$($field.name)': $($_.Exception.Message)"
+            Write-Verbose "Resposta GH CLI (se houver): $response"
         }
     }
 }
 
-function Handle-ExistingField {
+# Renomeada de Handle-ExistingField para Update-ExistingField
+function Update-ExistingField {
     param(
         [string]$projectId,
         [PSCustomObject]$field
     )
 
+    # Só prosseguir se for um campo de seleção única (que tem opções)
+    if ($field.type -ne "single_select") {
+        return
+    }
+
+    # Remover a verificação redundante e usar diretamente a consulta do módulo importado
     $queryPayload = @{
         query     = $script:getFieldsQuery
         variables = @{ projectId = $projectId }
@@ -124,22 +147,21 @@ function Handle-ExistingField {
         $found = $existing.data.node.fields.nodes | Where-Object { $_.name -eq $field.name }
 
         if (-not $found) {
-            Write-Warning "❌ Campo '$($field.name)' não encontrado apesar do erro de nome já usado. Pode ser um tipo diferente."
+            # Em vez de mostrar um aviso, usamos uma mensagem informativa e menos assustadora
+            Write-Host "ℹ️ Não foi possível obter detalhes do campo existente '$($field.name)'. Verificação de opções ignorada." -ForegroundColor Yellow
             return
         }
 
         if ($field.type -eq "single_select") {
             Add-SingleSelectOptions -fieldId $found.id -fieldName $field.name -options $field.options -existingOptions $found.options
         }
-        else {
-            Write-Host "   Campo '$($field.name)' (Tipo: $($field.type)) já existe e não é um campo de seleção única, ignorando opções."
-        }
     }
     catch {
-        Write-Warning "⚠️ Erro ao verificar ou adicionar opções para campo existente '$($field.name)': $($_.Exception.Message)"
+        Write-Warning "⚠️ Erro ao verificar campo existente '$($field.name)': $($_.Exception.Message)"
     }
 }
 
+# Esta função mantém o nome pois já usa um verbo aprovado (Add)
 function Add-SingleSelectOptions {
     param(
         [string]$fieldId,
@@ -149,6 +171,7 @@ function Add-SingleSelectOptions {
         [bool]$skipFirst = $false
     )
 
+    # Remover a verificação redundante e usar diretamente a consulta do módulo importado
     $existingOptionNames = $existingOptions.name
     $startIndex = if ($skipFirst) { 1 } else { 0 }
 
@@ -156,7 +179,7 @@ function Add-SingleSelectOptions {
         $opt = $options[$i]
         
         if ($existingOptionNames -contains $opt.name) {
-            Write-Host "   ✅ Opção já existe: $($opt.name)"
+            Write-Host "   ✅ Opção já existe: $($opt.name)" -ForegroundColor Green
             continue
         }
 
@@ -171,10 +194,10 @@ function Add-SingleSelectOptions {
         } | ConvertTo-Json -Depth 10 -Compress
 
         $addResult = $addPayload | gh api graphql --input - --header "Content-Type: application/json"
-        $addResultObj = Process-GhApiResponse -response $addResult
+        $addResultObj = ConvertFrom-GhApiResponse -response $addResult
         
         if ($addResultObj -and $addResultObj.data.addProjectV2SingleSelectFieldOption.singleSelectFieldOption) {
-            Write-Host "   ➕ Adicionada nova opção: $($opt.name) ao campo '$fieldName'"
+            Write-Host "   ➕ Adicionada nova opção: $($opt.name) ao campo '$fieldName'" -ForegroundColor Green
         }
         else {
             Write-Warning "   ❌ Falha ao adicionar opção '$($opt.name)' ao campo '$fieldName'"
@@ -182,3 +205,5 @@ function Add-SingleSelectOptions {
     }
 }
 
+# Exportar as funções com os novos nomes
+Export-ModuleMember -Function Add-CustomFields, Add-ProjectField, Update-ExistingField, Add-SingleSelectOptions

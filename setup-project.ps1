@@ -7,7 +7,6 @@ param(
     [switch]$useExisting = $false
 )
 
-$ErrorActionPreference = "Stop" # Garante que erros de comando param o script
 
 # Importar módulos
 $modulesDir = Join-Path $PSScriptRoot "modules"

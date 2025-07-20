@@ -1,5 +1,13 @@
 # Funções para gerenciar colunas de status
 
+# Importar o módulo de consultas GraphQL
+$graphqlModulePath = Join-Path $PSScriptRoot "graphql-queries.psm1"
+Import-Module $graphqlModulePath -Force
+
+# Importar o módulo de utilidades
+$utilsModulePath = Join-Path $PSScriptRoot "utils.psm1"
+Import-Module $utilsModulePath -Force
+
 function Update-StatusColumns {
     param(
         [string]$projectId,
@@ -33,8 +41,28 @@ function Get-StatusFieldId {
         [string]$projectId
     )
 
+    # Definir a consulta GraphQL diretamente para evitar problemas de escopo
+    $findStatusFieldQuery = @'
+query($projectId: ID!) {
+  node(id: $projectId) {
+    ... on ProjectV2 {
+      field(name: "Status") {
+        ... on ProjectV2SingleSelectField {
+          id
+          name
+          options {
+            id
+            name
+          }
+        }
+      }
+    }
+  }
+}
+'@
+
     $queryPayload = @{
-        query     = $script:findStatusFieldQuery
+        query     = $findStatusFieldQuery
         variables = @{ projectId = $projectId }
     } | ConvertTo-Json -Depth 5
 
@@ -45,7 +73,8 @@ function Get-StatusFieldId {
         $statusFieldId = $fieldResult.data.node.field.id
         
         if (-not $statusFieldId) {
-            Write-Error "Não foi possível encontrar o campo 'Status' no projeto. Verifique o ID do projeto e suas permissões."
+            Write-Host "❌ Não foi possível encontrar o campo 'Status' no projeto." -ForegroundColor Red
+            Write-Host "   O campo Status será criado automaticamente quando você configurar o Board do projeto." -ForegroundColor Yellow
             return $null
         }
         
@@ -53,7 +82,8 @@ function Get-StatusFieldId {
         return $statusFieldId
     }
     catch {
-        Write-Error "❌ Erro ao buscar campo 'Status': $($_.Exception.Message)"
+        Write-Host "❌ Erro ao buscar campo 'Status': $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "   O campo Status será criado automaticamente quando você configurar o Board do projeto." -ForegroundColor Yellow
         return $null
     }
 }
@@ -63,8 +93,32 @@ function Clear-StatusOptions {
         [string]$statusFieldId
     )
 
+    # Definir a consulta GraphQL diretamente para evitar problemas de escopo
+    $updateStatusOptionsMutation = @'
+mutation($fieldId: ID!, $options: [ProjectV2SingleSelectFieldOptionInput!]) {
+  updateProjectV2Field(
+    input: {
+      fieldId: $fieldId
+      singleSelectOptions: $options
+    }
+  ) {
+    projectV2Field {
+      ... on ProjectV2SingleSelectField {
+        id
+        name
+        options {
+          id
+          name
+          color
+        }
+      }
+    }
+  }
+}
+'@
+
     $clearPayload = @{
-        query     = $script:updateStatusOptionsMutation
+        query     = $updateStatusOptionsMutation
         variables = @{
             fieldId = $statusFieldId
             options = @()
@@ -73,7 +127,7 @@ function Clear-StatusOptions {
 
     try {
         $clearResult = $clearPayload | gh api graphql --input -
-        $resultObj = Process-GhApiResponse -response $clearResult
+        $resultObj = ConvertFrom-GhApiResponse -response $clearResult
         
         if ($resultObj -and $resultObj.data.updateProjectV2Field.projectV2Field) {
             Write-Host "✅ Opções do campo 'Status' removidas com sucesso" -ForegroundColor Green
@@ -85,7 +139,7 @@ function Clear-StatusOptions {
         }
     }
     catch {
-        Write-Error "❌ Erro ao limpar opções: $($_.Exception.Message)"
+        Write-Warning "❌ Erro ao limpar opções: $($_.Exception.Message)"
         return $false
     }
 }
@@ -96,8 +150,32 @@ function Add-StatusOptions {
         [Array]$options
     )
 
+    # Definir a consulta GraphQL diretamente para evitar problemas de escopo
+    $updateStatusOptionsMutation = @'
+mutation($fieldId: ID!, $options: [ProjectV2SingleSelectFieldOptionInput!]) {
+  updateProjectV2Field(
+    input: {
+      fieldId: $fieldId
+      singleSelectOptions: $options
+    }
+  ) {
+    projectV2Field {
+      ... on ProjectV2SingleSelectField {
+        id
+        name
+        options {
+          id
+          name
+          color
+        }
+      }
+    }
+  }
+}
+'@
+
     $updatePayload = @{
-        query     = $script:updateStatusOptionsMutation
+        query     = $updateStatusOptionsMutation
         variables = @{
             fieldId = $statusFieldId
             options = $options
@@ -106,7 +184,7 @@ function Add-StatusOptions {
 
     try {
         $updateResult = $updatePayload | gh api graphql --input -
-        $resultObj = Process-GhApiResponse -response $updateResult
+        $resultObj = ConvertFrom-GhApiResponse -response $updateResult
         
         if ($resultObj -and $resultObj.data.updateProjectV2Field.projectV2Field) {
             Write-Host "✅ Sucesso! As colunas do quadro (Status) foram atualizadas conforme o schema." -ForegroundColor Green
@@ -116,7 +194,7 @@ function Add-StatusOptions {
             return $true
         }
         else {
-            Write-Error "❌ Falha ao atualizar as opções do campo 'Status'."
+            Write-Warning "❌ Falha ao atualizar as opções do campo 'Status'."
             if ($resultObj -and $resultObj.errors) {
                 $resultObj.errors | ForEach-Object { Write-Host "   - $($_.message)" -ForegroundColor Red }
             }
@@ -124,7 +202,9 @@ function Add-StatusOptions {
         }
     }
     catch {
-        Write-Error "❌ Erro ao adicionar opções: $($_.Exception.Message)"
+        Write-Warning "❌ Erro ao adicionar opções: $($_.Exception.Message)"
         return $false
     }
 }
+
+Export-ModuleMember -Function Update-StatusColumns, Get-StatusFieldId, Clear-StatusOptions, Add-StatusOptions

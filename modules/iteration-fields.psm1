@@ -1,11 +1,21 @@
 # Funções para gerenciar campos de iteração (Sprint)
 
+# Importar o módulo de consultas GraphQL
+$graphqlModulePath = Join-Path $PSScriptRoot "graphql-queries.psm1"
+Import-Module $graphqlModulePath -Force
+
+# Importar o módulo de utilidades
+$utilsModulePath = Join-Path $PSScriptRoot "utils.psm1"
+Import-Module $utilsModulePath -Force
+
 function Add-IterationField {
     param(
         [string]$projectId,
         [PSCustomObject]$iterationConfig
     )
 
+    # Remover as verificações redundantes e usar diretamente as consultas do módulo importado
+    
     # 1. Check if the iteration field exists
     $checkPayload = @{
         query     = $script:getFieldsQuery
@@ -47,14 +57,13 @@ function Add-IterationField {
                 }
             }
             catch {
-                Write-Warning "⚠️ Erro ao enviar requisição para criar campo de iteração: $($_.Exception.Message)"
+                Write-Warning "⚠️ Erro ao criar campo de iteração: $($_.Exception.Message)"
                 Write-IterationFieldManualInstructions -iterationConfig $iterationConfig
                 return
             }
         }
 
         Write-Host "`nℹ️ As iterações (Sprints) são gerenciadas diretamente no campo 'Sprint' do projeto GitHub." -ForegroundColor DarkYellow
-        Write-Host "   Por favor, configure as iterações desejadas manualmente no projeto após a criação/verificação do campo."
         Write-Host "   Para informações detalhadas sobre como configurar as iterações (sprints), consulte o arquivo: '.\docs\campos-especiais.md'" -ForegroundColor Cyan
 
     }
@@ -63,8 +72,6 @@ function Add-IterationField {
         Write-IterationFieldManualInstructions -iterationConfig $iterationConfig
     }
 }
-
-## Função removida: Get-StartDayEnum não é mais necessária
 
 function Write-IterationFieldManualInstructions {
     param(
@@ -75,3 +82,4 @@ function Write-IterationFieldManualInstructions {
     Write-Host "Consulte o arquivo '.\docs\campos-especiais.md' para mais detalhes sobre a configuração manual do campo de iteração e sprints." -ForegroundColor Cyan
 }
 
+Export-ModuleMember -Function Add-IterationField, Write-IterationFieldManualInstructions
