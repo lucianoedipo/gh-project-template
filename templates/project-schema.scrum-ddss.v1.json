@@ -1,0 +1,194 @@
+{
+  "project_template": "SCRUM-DDSS-v1",
+  "iteration": {
+    "name": "Sprint",
+    "duration": 14,
+    "startDay": "monday",
+    "timezone": "America/Sao_Paulo"
+  },
+  "fields": [
+    {
+      "name": "Status",
+      "type": "single_select",
+      "options": [
+        {
+          "name": "📋 A Fazer",
+          "description": "Item ainda não iniciado",
+          "color": "GRAY"
+        },
+        {
+          "name": "🟢 Pronto para iniciar",
+          "description": "Item priorizado e pronto para execução",
+          "color": "BLUE"
+        },
+        {
+          "name": "🚧 Em andamento",
+          "description": "Item em desenvolvimento",
+          "color": "YELLOW"
+        },
+        {
+          "name": "🔍 Em revisão",
+          "description": "Item aguardando revisão",
+          "color": "ORANGE"
+        },
+        {
+          "name": "📤 Aguardando validação",
+          "description": "Item aguardando validação do PO",
+          "color": "PINK"
+        },
+        {
+          "name": "✅ Concluído",
+          "description": "Item finalizado e validado",
+          "color": "GREEN"
+        }
+      ]
+    },
+    {
+      "name": "Tipo de Item",
+      "type": "single_select",
+      "options": [
+        {
+          "name": "HU - História de Usuário",
+          "description": "Requisito funcional descrito como HU",
+          "color": "BLUE"
+        },
+        {
+          "name": "DE - Defeito",
+          "description": "Correção de erro ou falha",
+          "color": "RED"
+        },
+        {
+          "name": "ME - Melhoria",
+          "description": "Aprimoramento em algo existente",
+          "color": "YELLOW"
+        },
+        {
+          "name": "TE - Requisito Técnico",
+          "description": "Tarefa técnica ou infraestrutura",
+          "color": "GRAY"
+        },
+        {
+          "name": "Épico",
+          "description": "Agregador de histórias relacionadas",
+          "color": "PURPLE"
+        }
+      ]
+    },
+    {
+      "name": "Prioridade",
+      "type": "single_select",
+      "options": [
+        {
+          "name": "🔥 Urgente (P0)",
+          "description": "Prioridade máxima",
+          "color": "RED"
+        },
+        {
+          "name": "⏱ Alta (P1)",
+          "description": "Alta prioridade",
+          "color": "ORANGE"
+        },
+        {
+          "name": "📌 Normal (P2)",
+          "description": "Prioridade padrão",
+          "color": "BLUE"
+        },
+        {
+          "name": "🧊 Baixa (P3)",
+          "description": "Baixa prioridade",
+          "color": "GRAY"
+        }
+      ]
+    },
+    {
+      "name": "PF Estimado",
+      "type": "number"
+    },
+    {
+      "name": "PF Validado",
+      "type": "number"
+    },
+    {
+      "name": "Critérios de Aceitação",
+      "type": "text"
+    },
+    {
+      "name": "Definição de Pronto",
+      "type": "text"
+    },
+    {
+      "name": "Validação do PO",
+      "type": "single_select",
+      "options": [
+        {
+          "name": "✅ Validado",
+          "description": "Aprovado pelo PO",
+          "color": "GREEN"
+        },
+        {
+          "name": "🕗 Pendente",
+          "description": "Aguardando validação",
+          "color": "YELLOW"
+        },
+        {
+          "name": "❌ Rejeitado",
+          "description": "Não aprovado pelo PO",
+          "color": "RED"
+        }
+      ]
+    },
+    {
+      "name": "Evidência de Teste",
+      "type": "text"
+    },
+    {
+      "name": "Regra de Negócio",
+      "type": "text"
+    },
+    {
+      "name": "Dependências",
+      "type": "text"
+    },
+    {
+      "name": "Sprint (Issue ID)",
+      "type": "text"
+    }
+  ],
+  "columns": [
+    "📋 Backlog do Produto",
+    "🧾 Backlog da Sprint",
+    "⚙️ Em andamento",
+    "🔍 Em revisão",
+    "📤 Aguardando validação",
+    "✅ Feito"
+  ],
+  "views": [
+    {
+      "name": "📅 Sprint Atual",
+      "group_by": "Status",
+      "filters": ["Sprint = atual"],
+      "fields": [
+        "Tipo de Item",
+        "PF Estimado",
+        "Validação do PO",
+        "Critérios de Aceitação"
+      ]
+    },
+    {
+      "name": "📈 Métricas de Entrega",
+      "filters": ["PF Validado != null"],
+      "fields": ["Sprint", "PF Estimado", "PF Validado", "Status"]
+    },
+    {
+      "name": "🔍 Itens Pendentes de Validação",
+      "filters": ["Validação do PO = 🕗 Pendente"],
+      "fields": ["Status", "Critérios de Aceitação", "Evidência de Teste"]
+    },
+    {
+      "name": "🗺️ Visão por Épico",
+      "group_by": "Tipo de Item",
+      "filters": ["Tipo de Item = Épico"],
+      "fields": ["Status", "PF Estimado"]
+    }
+  ]
+}
