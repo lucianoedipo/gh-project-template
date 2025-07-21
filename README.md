@@ -19,25 +19,9 @@ Uma ferramenta para configuração automatizada de projetos GitHub Projects com 
    - `repo` (acesso completo aos repositórios)
    - `admin:org` (para gerenciar projetos organizacionais)
    - `project` (acesso aos projetos)
+   - `read:project` (para listar projetos existentes)
 
-   **Como criar um token de acesso pessoal**:
-
-   1. Acesse [GitHub > Settings > Developer settings > Personal access tokens > Tokens (classic)](https://github.com/settings/tokens)
-   2. Clique em "Generate new token" e selecione "Generate new token (classic)"
-   3. Dê um nome ao seu token (ex: "GitHub Projects Setup")
-   4. Selecione os escopos necessários: `repo`, `admin:org`, `project`
-   5. Clique em "Generate token"
-   6. **Importante**: Copie o token gerado imediatamente e guarde-o em local seguro!
-
-   **Autenticação com o token**:
-
-   ```powershell
-   # Opção 1: Autenticação interativa (recomendada para início)
-   gh auth login
-
-   # Opção 2: Autenticação direta com token
-   gh auth login --with-token < seu_arquivo_token.txt
-   ```
+   Para instruções detalhadas de autenticação, consulte `docs/autenticacao.md`.
 
 ## Uso Básico
 
@@ -65,24 +49,27 @@ Se encontrar erros de permissão durante a execução:
    gh auth status
    ```
 
-2. Caso já esteja autenticado, mas encontre erros de permissão, pode ser necessário gerar um novo token com as permissões corretas:
+2. Para problemas de autenticação, o script oferece métodos interativos para:
 
+   - Atualizar escopos de token existente (quando possível)
+   - Criar um novo token com as permissões corretas
+   - Informar ID ou número do projeto manualmente se não puder listar projetos
+
+3. **NOTA IMPORTANTE**: Evite usar `gh auth login --with-token` diretamente, pois pode travar em alguns ambientes. Use o método interativo recomendado:
    ```
    gh auth logout
    gh auth login
+   # Escolha a opção para colar um token quando solicitado
    ```
 
-3. Selecione a opção de GitHub.com e autenticação via token, inserindo um novo token com todas as permissões necessárias.
+## Documentação
 
-## Mais Informações
+Os seguintes documentos estão disponíveis para ajudar no uso da ferramenta:
 
-Consulte a documentação em `.\docs\` para instruções detalhadas sobre cada aspecto da ferramenta.
-
-- `templates/` - Arquivos JSON de templates de projeto
-  - `project-schema.scrum-ddss.v1.json` - Template SCRUM para equipes DDSS
-- `docs/` - Documentação detalhada
-  - `criar-views-manual.md` - Guia para criação manual de views
-- `projects/` - Armazena detalhes de projetos criados (gerado automaticamente)
+- `docs/autenticacao.md` - Guia completo de autenticação e resolução de problemas de permissão
+- `docs/campos-especiais.md` - Como configurar campos que exigem etapas manuais (ex: Iteração/Sprint)
+- `docs/criar-views-manual.md` - Instruções para criar views personalizadas (não automatizável pela API)
+- `docs/README_SCRUM_DDSS.md` - Documentação do template SCRUM-DDSS
 
 ## Templates Disponíveis
 
@@ -100,6 +87,21 @@ Template otimizado para equipes SCRUM que inclui:
 Você pode personalizar ou criar novos templates editando os arquivos JSON na pasta `templates/`. Cada template contém:
 
 - Configuração de campos personalizados
+- Opções de status (colunas do quadro)
+- Definições de visualizações (views)
+- Configuração de iterações (sprints)
+
+## Limitações Conhecidas
+
+- A API do GitHub não permite criar ou atualizar views programaticamente
+- As views precisam ser criadas manualmente conforme documentado em `docs/criar-views-manual.md`
+- Campos existentes com o mesmo nome podem causar conflitos
+- O comando `gh auth refresh` pode travar em alguns ambientes
+
+## Suporte
+
+Para problemas ou sugestões, crie uma issue neste repositório.
+
 - Opções de status (colunas do quadro)
 - Definições de visualizações (views)
 - Configuração de iterações (sprints)
