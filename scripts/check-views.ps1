@@ -6,13 +6,14 @@ param(
 # Importar módulos
 $modulesPath = Join-Path $PSScriptRoot "..\modules"
 Import-Module (Join-Path $modulesPath "SchemaManager.psm1") -Force
+Import-Module (Join-Path $modulesPath "utils.psm1") -Force  # Adicionando importação do módulo utils
 
 if (-not $projectId) {
     Write-Error "O ID do projeto é obrigatório. Use: .\check-views.ps1 -projectId SEU_ID_AQUI"
     return
 }
 
-Write-Host "🚀 Iniciando a verificação de views para o projeto: $projectId"
+Write-Output "🚀 Iniciando a verificação de views para o projeto: $projectId"
 
 # Carregar schema
 $schemaInfo = Get-ProjectSchema -schemaPath $schemaPath
@@ -45,11 +46,11 @@ query GetProjectData($projectId: ID!) {
 '@
 
 $queryPayload = @{ query = $getProjectDataQuery; variables = @{ projectId = $projectId } } | ConvertTo-Json
-Write-Host "🔍 Mapeando campos e views existentes no projeto..."
+Write-Output "🔍 Mapeando campos e views existentes no projeto..."
 $projectData = $queryPayload | gh api graphql --input - 2>$null | ConvertFrom-Json
 
 if ($null -eq $projectData.data.node) {
-    Write-Host "❌ Falha ao buscar dados do projeto. Verifique o ID do projeto e suas permissões." -ForegroundColor Red
+    Write-Output "❌ Falha ao buscar dados do projeto. Verifique o ID do projeto e suas permissões."
     return
 }
 
@@ -64,10 +65,10 @@ foreach ($view in $projectData.data.node.views.nodes) {
     $viewNameToIdMap[$view.name] = $view.id
 }
 
-Write-Host "✅ Mapeamento concluído."
+Write-Output "✅ Mapeamento concluído."
 
 # 4. Gerar relatório de correspondência entre as views do schema e do projeto
-Write-Host "📊 Gerando relatório de views..."
+Write-Output "📊 Gerando relatório de views..."
 $viewReport = @()
 
 foreach ($viewSchema in $viewsSchema) {
@@ -83,16 +84,16 @@ foreach ($viewSchema in $viewsSchema) {
 }
 
 # Exibir relatório de views como texto simples para evitar problemas de formatação
-Write-Host "`nRelatório de Views:"
-Write-Host "===================="
+Write-Output "`nRelatório de Views:"
+Write-Output "===================="
 foreach ($item in $viewReport) {
-    Write-Host "$($item.Status) | $($item.Nome) | ID: $($item.Id)"
+    Write-Output "$($item.Status) | $($item.Nome) | ID: $($item.Id)"
 }
-Write-Host "===================="
+Write-Output "===================="
 
 $docsPath = Join-Path $PSScriptRoot "..\docs\criar-views-manual.md"
-Write-Host "`n🔔 Verificação concluída!"
-Write-Host "  • Para instruções detalhadas sobre como criar as views manualmente, consulte:"
-Write-Host "    $docsPath"
+Write-Output "`n🔔 Verificação concluída!"
+Write-Output "  • Para instruções detalhadas sobre como criar as views manualmente, consulte:"
+Write-Output "    $docsPath"
 
 

@@ -1,11 +1,14 @@
 # Funções para gerenciar campos regulares
 
 # Importar o módulo de consultas GraphQL e utilidades
+# Estes módulos estão na mesma pasta 'modules'
 $graphqlModulePath = Join-Path $PSScriptRoot "graphql-queries.psm1"
 Import-Module $graphqlModulePath -Force
 
 $utilsModulePath = Join-Path $PSScriptRoot "utils.psm1"
 Import-Module $utilsModulePath -Force
+
+
 
 function Add-CustomFields {
     param(
@@ -14,7 +17,7 @@ function Add-CustomFields {
     )
 
     foreach ($field in $fields) {
-        # Skip iteration field, as it's handled separately
+        # Ignorar campo de iteração, pois é tratado separadamente
         if ($field.type -eq "iteration") {
             continue
         }
@@ -31,13 +34,7 @@ function Add-CustomFields {
                 # Adicionar pelo menos uma opção no momento da criação do campo
                 if ($field.options -and $field.options.Count -gt 0) {
                     $firstOption = $field.options[0]
-                    $fieldInput.singleSelectOptions = @(
-                        @{
-                            name        = $firstOption.name
-                            description = $firstOption.description
-                            color       = $firstOption.color
-                        }
-                    )
+                    $fieldInput.singleSelectOptions = @([PSCustomObject]@{ name = $firstOption.name; description = $firstOption.description; color = $firstOption.color })
                 }
             }
             "number" {
@@ -47,84 +44,84 @@ function Add-CustomFields {
                 $fieldInput.dataType = "TEXT"
             }
             default {
-                Write-Warning "⚠️ Tipo de campo desconhecido ou não suportado: $($field.type). Campo: $($field.name)"
+                Write-Log -Message "Tipo de campo desconhecido ou não suportado: $($field.type). Campo: $($field.name)" -Level Warning -Console
                 continue
             }
         }
 
-        # Renomeado para usar verbo aprovado
         Add-ProjectField -fieldInput $fieldInput -field $field
     }
 }
 
-# Renomeada de Create-Field para Add-ProjectField (verbo aprovado)
 function Add-ProjectField {
     param(
         [hashtable]$fieldInput,
         [PSCustomObject]$field
     )
 
-    # Remover a verificação redundante e usar diretamente a consulta do módulo importado
-    $createPayload = @{
-        query     = $script:createFieldMutation
-        variables = @{ input = $fieldInput }
-    } | ConvertTo-Json -Depth 10 -Compress
-
     try {
         Write-Host "   🔄 Criando campo '$($field.name)' (Tipo: $($field.type))..." -ForegroundColor Cyan
         
-        $response = $createPayload | gh api graphql --input - --header "Content-Type: application/json" 2>&1
+        $tempFile = [System.IO.Path]::GetTempFileName()
         
-        # Extrair e processar o JSON da resposta
-        $resultObj = ConvertFrom-GhApiResponse -response $response
+        $mutationQuery = @{
+            query = $createFieldMutation
+            variables = @{
+                input = $fieldInput
+            }
+        } | ConvertTo-Json -Depth 10 -Compress
         
-        if ($resultObj -and $resultObj.data.createProjectV2Field.projectV2Field) {
+        Set-Content -Path $tempFile -Value $mutationQuery -Encoding UTF8NoBOM
+
+        # Executar consulta usando o arquivo como entrada
+        # Redirecionar stderr para stdout para capturar erros do gh cli como parte da resposta
+        $response = gh api graphql --input "$tempFile" 2>&1 
+        
+        Remove-Item -Path $tempFile -Force -ErrorAction SilentlyContinue 
+        
+        # O gh CLI em caso de erro pode não retornar JSON válido ou retornar uma string de erro
+        # Vamos tentar converter para JSON para ver se há erros da API
+        try {
+            $resultObj = $response | ConvertFrom-Json -ErrorAction Stop
+        }
+        catch {
+            # Se não for JSON, é um erro direto do gh CLI
+            Write-Log -Message "Erro bruto do gh CLI ao criar campo '$($field.name)': $response" -Level Error -Console
+            Write-Warning "⚠️ Campo '$($field.name)' não pôde ser criado devido a um erro no CLI. Verificando se já existe..."
+            Update-ExistingField -projectId $fieldInput.projectId -field $field
+            return
+        }
+
+        if ($resultObj.data.createProjectV2Field.projectV2Field) {
             $createdFieldName = $resultObj.data.createProjectV2Field.projectV2Field.name
             Write-Host "✅ Criado campo: $createdFieldName (Tipo: $($field.type))" -ForegroundColor Green
-
-            # If it's a single_select, add remaining options
+            
+            # Se for single_select, adicionar as opções restantes
             if ($field.type -eq "single_select" -and $field.options -and $field.options.Count -gt 1) {
                 $createdFieldId = $resultObj.data.createProjectV2Field.projectV2Field.id
-                Add-SingleSelectOptions -fieldId $createdFieldId -fieldName $field.name -options $field.options -skipFirst $true
+                Add-SingleSelectOptions -fieldId $createdFieldId -fieldName $field.name -options $field.options
             }
         }
-        elseif ($resultObj -and $resultObj.errors) {
+        elseif ($resultObj.errors) {
             $errorMsg = $resultObj.errors | ForEach-Object { $_.message } | Out-String
             
-            # Verificar se o erro é sobre campo já existente
-            if ($errorMsg -like '*Name has already been taken*') {
-                throw [System.Exception]::new("Name has already been taken")
+            # Verificar erro de campo já existente
+            if ($errorMsg -match "Name has already been taken") {
+                Write-Host "ℹ️ Campo '$($field.name)' já existe. Verificando opções..." -ForegroundColor Yellow
+                Update-ExistingField -projectId $fieldInput.projectId -field $field
             }
             else {
-                Write-Warning "⚠️ Erro ao criar campo '$($field.name)': $errorMsg"
+                Write-Log -Message "Erro da API GitHub ao criar campo '$($field.name)': $errorMsg" -Level Error -Console
+                Write-Warning "⚠️ Campo '$($field.name)' não pôde ser criado: $errorMsg"
             }
-        }
-        else {
-            Write-Warning "⚠️ Não foi possível processar a resposta da API para o campo '$($field.name)'"
-            Write-Verbose "Resposta bruta: $response"
         }
     }
     catch {
-        # Lidar com campo já existente
-        if ($_.Exception.Message -like '*Name has already been taken*') {
-            # Para campos single_select, verificamos as opções
-            if ($field.type -eq "single_select") {
-                Write-Host "⚠️ Campo '$($field.name)' já existe. Verificando opções..." -ForegroundColor Yellow
-                Update-ExistingField -projectId $fieldInput.projectId -field $field
-            } 
-            else {
-                # Para outros tipos, apenas informamos que o campo já existe
-                Write-Host "ℹ️ Campo '$($field.name)' (Tipo: $($field.type)) já existe." -ForegroundColor Cyan
-            }
-        }
-        else {
-            Write-Error "❌ Erro ao criar campo '$($field.name)': $($_.Exception.Message)"
-            Write-Verbose "Resposta GH CLI (se houver): $response"
-        }
+        Write-Log -Message "Exceção inesperada ao criar campo '$($field.name)': $($_.Exception.Message)" -Level Error -Console
+        Write-Warning "❌ Erro ao criar campo '$($field.name)'. Detalhes salvos no log."
     }
 }
 
-# Renomeada de Handle-ExistingField para Update-ExistingField
 function Update-ExistingField {
     param(
         [string]$projectId,
@@ -136,19 +133,17 @@ function Update-ExistingField {
         return
     }
 
-    # Remover a verificação redundante e usar diretamente a consulta do módulo importado
     $queryPayload = @{
-        query     = $script:getFieldsQuery
+        query     = $getFieldsQuery
         variables = @{ projectId = $projectId }
     } | ConvertTo-Json -Depth 5 -Compress
 
     try {
-        $existing = $queryPayload | gh api graphql --input - --header "Content-Type: application/json" | ConvertFrom-Json
+        $existing = $queryPayload | gh api graphql --input - | ConvertFrom-Json
         $found = $existing.data.node.fields.nodes | Where-Object { $_.name -eq $field.name }
 
         if (-not $found) {
-            # Em vez de mostrar um aviso, usamos uma mensagem informativa e menos assustadora
-            Write-Host "ℹ️ Não foi possível obter detalhes do campo existente '$($field.name)'. Verificação de opções ignorada." -ForegroundColor Yellow
+            Write-Log -Message "Não foi possível obter detalhes do campo existente '$($field.name)'. Verificação de opções ignorada." -Level Info -Console
             return
         }
 
@@ -157,11 +152,11 @@ function Update-ExistingField {
         }
     }
     catch {
-        Write-Warning "⚠️ Erro ao verificar campo existente '$($field.name)': $($_.Exception.Message)"
+        Write-Log -Message "Erro ao verificar campo existente '$($field.name)': $($_.Exception.Message)" -Level Error -Console
+        Write-Warning "⚠️ Erro ao verificar campo existente '$($field.name)'."
     }
 }
 
-# Esta função mantém o nome pois já usa um verbo aprovado (Add)
 function Add-SingleSelectOptions {
     param(
         [string]$fieldId,
@@ -171,37 +166,35 @@ function Add-SingleSelectOptions {
         [bool]$skipFirst = $false
     )
 
-    # Remover a verificação redundante e usar diretamente a consulta do módulo importado
-    $existingOptionNames = $existingOptions.name
+    $allOptions = @()
+    $existingOptions | ForEach-Object { $allOptions += $_ }
+
     $startIndex = if ($skipFirst) { 1 } else { 0 }
 
     for ($i = $startIndex; $i -lt $options.Count; $i++) {
         $opt = $options[$i]
-        
-        if ($existingOptionNames -contains $opt.name) {
-            Write-Host "   ✅ Opção já existe: $($opt.name)" -ForegroundColor Green
-            continue
+        if ($existingOptions.name -notcontains $opt.name) {
+            $allOptions += $opt
         }
+    }
 
-        $addPayload = @{
-            query     = $script:addOptionMutation
-            variables = @{
-                fieldId     = $fieldId
-                name        = $opt.name
-                description = $opt.description
-                color       = $opt.color
-            }
-        } | ConvertTo-Json -Depth 10 -Compress
+    $updatePayload = @{
+        query     = $updateStatusOptionsMutation
+        variables = @{
+            fieldId = $fieldId
+            options = $allOptions
+        }
+    } | ConvertTo-Json -Depth 10 -Compress
 
-        $addResult = $addPayload | gh api graphql --input - --header "Content-Type: application/json"
-        $addResultObj = ConvertFrom-GhApiResponse -response $addResult
-        
-        if ($addResultObj -and $addResultObj.data.addProjectV2SingleSelectFieldOption.singleSelectFieldOption) {
-            Write-Host "   ➕ Adicionada nova opção: $($opt.name) ao campo '$fieldName'" -ForegroundColor Green
-        }
-        else {
-            Write-Warning "   ❌ Falha ao adicionar opção '$($opt.name)' ao campo '$fieldName'"
-        }
+    $updateResult = $updatePayload | gh api graphql --input -
+    $resultObj = ConvertFrom-GhApiResponse -response $updateResult
+
+    if ($resultObj -and $resultObj.data.updateProjectV2Field.projectV2Field) {
+        Write-Host "   ✅ Opções do campo '$fieldName' atualizadas com sucesso." -ForegroundColor Green
+    }
+    else {
+        Write-Log -Message "Falha ao atualizar opções do campo '$fieldName'. Resposta: $($updateResult | Out-String)" -Level Warning -Console
+        Write-Warning "   ❌ Falha ao atualizar opções do campo '$fieldName'"
     }
 }
 

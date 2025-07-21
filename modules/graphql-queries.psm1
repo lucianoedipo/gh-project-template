@@ -88,14 +88,13 @@ mutation CreateIteration($iterationFieldId: ID!, $title: String!, $startDate: Da
 }
 '@
 
+# Corrigir a mutação para campos de iteração - o formato atual está incorreto
 $script:createIterationFieldMutation = @'
-mutation CreateIterationField($projectId: ID!, $name: String!, $duration: Int!) {
-  createProjectV2IterationField(input: {
+mutation CreateIterationField($projectId: ID!, $name: String!) {
+  createProjectV2Field(input: {
     projectId: $projectId,
-    name: $name,
-    configuration: {
-      duration: $duration
-    }
+    dataType: ITERATION,
+    name: $name
   }) {
     projectV2Field {
       ... on ProjectV2IterationField {
@@ -150,4 +149,4 @@ mutation($fieldId: ID!, $options: [ProjectV2SingleSelectFieldOptionInput!]) {
 '@
 
 # Garantir que todas as consultas sejam exportadas
-Export-ModuleMember -Variable script:*
+Export-ModuleMember -Variable createFieldMutation, getFieldsQuery, addOptionMutation, createIterationMutation, createIterationFieldMutation, findStatusFieldQuery, updateStatusOptionsMutation

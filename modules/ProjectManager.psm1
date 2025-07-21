@@ -170,9 +170,6 @@ function New-GitHubProject {
 
     # Solicitar título do projeto, se não fornecido
     if (-not $title) {
-        Write-Host "`n📋 Projetos existentes para ${owner}:" -ForegroundColor Yellow
-        gh project list --owner $owner --limit 10
-        
         $title = Read-Host "`nDigite um título para o novo projeto"
         if (-not $title) {
             Write-Error "❌ O título do projeto é obrigatório."
@@ -213,17 +210,23 @@ function Save-ProjectInfo {
         [string]$owner,
         [string]$projectId,
         [string]$projectNumber,
-        [string]$projectUrl
+        [string]$projectUrl,
+        [string]$fieldConfigOutput,
+        [string]$statusConfigResult,
+        [string]$viewCheckResult
     )
 
     # Salvar informações do projeto para referência futura
     $projectConfig = @{
-        name      = $title
-        owner     = $owner
-        id        = $projectId
-        number    = $projectNumber
-        url       = $projectUrl
-        createdAt = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
+        name               = $title
+        owner              = $owner
+        id                 = $projectId
+        number             = $projectNumber
+        url                = $projectUrl
+        createdAt          = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
+        'fieldConfiguration' = $fieldConfigOutput
+        'statusConfiguration' = $statusConfigResult
+        'viewCheck'          = $viewCheckResult
     } | ConvertTo-Json
 
     # Gerar timestamp para o nome do arquivo
@@ -231,15 +234,18 @@ function Save-ProjectInfo {
     
     # Salvar em diretório de logs (que estará no .gitignore)
     $logsDir = ".\logs\projects"
-    if (-not (Test-Path $logsDir)) {
-        New-Item -ItemType Directory -Path $logsDir -Force | Out-Null
+    try {
+        if (-not (Test-Path $logsDir)) {
+            New-Item -ItemType Directory -Path $logsDir -Force | Out-Null
+        }
+        $logFile = Join-Path $logsDir "project-config-$timestamp.json"
+        $projectConfig | Set-Content -Path $logFile -ErrorAction Stop
+        Write-Host "`n💾 Informações do projeto salvas em: $logFile"
     }
-    
-    # Adicionar timestamp ao nome do arquivo
-    $logFile = Join-Path $logsDir "$owner-$($projectNumber)-$timestamp.json"
-    $projectConfig | Set-Content -Path $logFile
-
-    Write-Host "`n💾 Informações do projeto salvas em: $logFile"
+    catch {
+        $errorMessageDetail = $_.Exception.Message
+        Write-Error "❌ Erro ao salvar informações do projeto em ${logFile}: $errorMessageDetail"
+    }
     
     return $logFile
 }

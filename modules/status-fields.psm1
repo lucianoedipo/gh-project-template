@@ -28,12 +28,15 @@ function Update-StatusColumns {
     }
 
     # Limpar as opções existentes primeiro para evitar duplicatas
-    Write-Host "🧹 Limpando opções existentes para evitar duplicatas..." -ForegroundColor Yellow
-    Clear-StatusOptions -statusFieldId $statusFieldId
+    Write-Output "🧹 Limpando opções existentes para evitar duplicatas..."
+    $clearResult = Clear-StatusOptions -statusFieldId $statusFieldId
     
     # Adicionar as novas opções
-    Write-Host "🔄 Atualizando as opções do campo 'Status'..." -ForegroundColor Cyan
-    Add-StatusOptions -statusFieldId $statusFieldId -options $newOptions
+    Write-Output "🔄 Atualizando as opções do campo 'Status'..."
+    $addResult = Add-StatusOptions -statusFieldId $statusFieldId -options $newOptions
+    
+    # Não retornar valores booleanos diretamente para evitar saída no console
+    return
 }
 
 function Get-StatusFieldId {
@@ -64,13 +67,22 @@ query($projectId: ID!) {
     $queryPayload = @{
         query     = $findStatusFieldQuery
         variables = @{ projectId = $projectId }
-    } | ConvertTo-Json -Depth 5
+    } | ConvertTo-Json -Depth 5 -Compress
 
-    Write-Host "🔍 Buscando o campo 'Status' no projeto..." -ForegroundColor Cyan
+    # IMPORTANTE: Não usar Write-Output aqui, usar Write-Host para evitar captura do texto na variável de retorno
+    Write-Host "🔍 Buscando o campo 'Status' no projeto..." -ForegroundColor Yellow
     
     try {
-        $fieldResult = $queryPayload | gh api graphql --input - | ConvertFrom-Json
-        $statusFieldId = $fieldResult.data.node.field.id
+        # Usar arquivo temporário para a consulta para evitar problemas de pipeline e redirecionamento
+        $tempFile = [System.IO.Path]::GetTempFileName()
+        Set-Content -Path $tempFile -Value $queryPayload -Encoding UTF8NoBOM
+        
+        $fieldResult = gh api graphql --input "$tempFile" 2>&1
+        Remove-Item -Path $tempFile -Force -ErrorAction SilentlyContinue
+        
+        # Converter resultado para objeto
+        $resultObj = $fieldResult | ConvertFrom-Json -ErrorAction Stop
+        $statusFieldId = $resultObj.data.node.field.id
         
         if (-not $statusFieldId) {
             Write-Host "❌ Não foi possível encontrar o campo 'Status' no projeto." -ForegroundColor Red
@@ -79,6 +91,7 @@ query($projectId: ID!) {
         }
         
         Write-Host "✅ Campo 'Status' encontrado com ID: $statusFieldId" -ForegroundColor Green
+        # Retornar apenas o ID sem nenhuma mensagem adicional
         return $statusFieldId
     }
     catch {
@@ -93,53 +106,50 @@ function Clear-StatusOptions {
         [string]$statusFieldId
     )
 
-    # Definir a consulta GraphQL diretamente para evitar problemas de escopo
-    $updateStatusOptionsMutation = @'
-mutation($fieldId: ID!, $options: [ProjectV2SingleSelectFieldOptionInput!]) {
-  updateProjectV2Field(
-    input: {
-      fieldId: $fieldId
-      singleSelectOptions: $options
+    # Garantir que estamos trabalhando com um ID válido
+    if (-not $statusFieldId -or $statusFieldId -match "Buscando" -or $statusFieldId -match "encontrado") {
+        Write-Host "⚠️ ID do campo Status inválido: '$statusFieldId'" -ForegroundColor Red
+        return $false
     }
-  ) {
-    projectV2Field {
-      ... on ProjectV2SingleSelectField {
-        id
-        name
-        options {
-          id
-          name
-          color
-        }
-      }
-    }
-  }
-}
-'@
 
+    # Usar a variável importada corretamente
     $clearPayload = @{
-        query     = $updateStatusOptionsMutation
+        query     = $script:updateStatusOptionsMutation
         variables = @{
             fieldId = $statusFieldId
             options = @()
         }
     } | ConvertTo-Json -Depth 10 -Compress
 
+    $tempFile = [System.IO.Path]::GetTempFileName()
+    Set-Content -Path $tempFile -Value $clearPayload -Encoding UTF8NoBOM
+
+    # Remover linha de debug
+    # Write-Output "DEBUG: Temp JSON file content for Clear-StatusOptions: $(Get-Content -Path $tempFile | Out-String)"
+
     try {
-        $clearResult = $clearPayload | gh api graphql --input -
-        $resultObj = ConvertFrom-GhApiResponse -response $clearResult
+        $clearResult = gh api graphql --input "$tempFile" 2>&1
+        Remove-Item -Path $tempFile -Force -ErrorAction SilentlyContinue
         
-        if ($resultObj -and $resultObj.data.updateProjectV2Field.projectV2Field) {
-            Write-Host "✅ Opções do campo 'Status' removidas com sucesso" -ForegroundColor Green
-            return $true
+        # Processar a resposta
+        try {
+            $resultObj = $clearResult | ConvertFrom-Json -ErrorAction Stop
+            if ($resultObj.data.updateProjectV2Field.projectV2Field) {
+                Write-Output "✅ Opções do campo 'Status' removidas com sucesso"
+                return $true
+            }
+            else {
+                Write-Log -Message "Possível problema ao limpar opções de status: $clearResult" -Level Warning
+                return $false
+            }
         }
-        else {
-            Write-Warning "⚠️ Possível problema ao limpar opções de status"
+        catch {
+            Write-Log -Message "Erro ao processar resposta de limpeza: $clearResult" -Level Error
             return $false
         }
     }
     catch {
-        Write-Warning "❌ Erro ao limpar opções: $($_.Exception.Message)"
+        Write-Log -Message "Erro ao limpar opções: $($_.Exception.Message)" -Level Error
         return $false
     }
 }
@@ -150,61 +160,52 @@ function Add-StatusOptions {
         [Array]$options
     )
 
-    # Definir a consulta GraphQL diretamente para evitar problemas de escopo
-    $updateStatusOptionsMutation = @'
-mutation($fieldId: ID!, $options: [ProjectV2SingleSelectFieldOptionInput!]) {
-  updateProjectV2Field(
-    input: {
-      fieldId: $fieldId
-      singleSelectOptions: $options
-    }
-  ) {
-    projectV2Field {
-      ... on ProjectV2SingleSelectField {
-        id
-        name
-        options {
-          id
-          name
-          color
-        }
-      }
-    }
-  }
-}
-'@
-
+    # Correção aqui: usar $script:updateStatusOptionsMutation 
+    # em vez de $updateStatusOptionsMutation
     $updatePayload = @{
-        query     = $updateStatusOptionsMutation
+        query     = $script:updateStatusOptionsMutation
         variables = @{
             fieldId = $statusFieldId
             options = $options
         }
     } | ConvertTo-Json -Depth 10 -Compress
 
+    $tempFile = [System.IO.Path]::GetTempFileName()
+    Set-Content -Path $tempFile -Value $updatePayload -Encoding UTF8NoBOM
+
+    # Remover linha de debug
+    # Write-Output "DEBUG: Temp JSON file content for Add-StatusOptions: $(Get-Content -Path $tempFile | Out-String)"
+
     try {
-        $updateResult = $updatePayload | gh api graphql --input -
-        $resultObj = ConvertFrom-GhApiResponse -response $updateResult
+        $updateResult = gh api graphql --input "$tempFile" 2>&1
+        Remove-Item -Path $tempFile -Force -ErrorAction SilentlyContinue
         
-        if ($resultObj -and $resultObj.data.updateProjectV2Field.projectV2Field) {
-            Write-Host "✅ Sucesso! As colunas do quadro (Status) foram atualizadas conforme o schema." -ForegroundColor Green
-            $updatedOptions = $resultObj.data.updateProjectV2Field.projectV2Field.options
-            Write-Host "Opções atuais:"
-            $updatedOptions | ForEach-Object { Write-Host "  - $($_.name) ($($_.color))" }
-            return $true
-        }
-        else {
-            Write-Warning "❌ Falha ao atualizar as opções do campo 'Status'."
-            if ($resultObj -and $resultObj.errors) {
-                $resultObj.errors | ForEach-Object { Write-Host "   - $($_.message)" -ForegroundColor Red }
+        # Processar a resposta
+        try {
+            $resultObj = $updateResult | ConvertFrom-Json -ErrorAction Stop
+            if ($resultObj.data.updateProjectV2Field.projectV2Field) {
+                Write-Output "✅ Sucesso! As colunas do quadro (Status) foram atualizadas conforme o schema."
+                $updatedOptions = $resultObj.data.updateProjectV2Field.projectV2Field.options
+                Write-Output "Opções atuais:"
+                $updatedOptions | ForEach-Object { Write-Output "  - $($_.name) ($($_.color))" }
+                return $true
             }
+            else {
+                Write-Log -Message "Falha ao atualizar as opções do campo 'Status': $updateResult" -Level Warning
+                return $false
+            }
+        }
+        catch {
+            Write-Log -Message "Erro ao processar resposta de atualização: $updateResult" -Level Error
             return $false
         }
     }
     catch {
-        Write-Warning "❌ Erro ao adicionar opções: $($_.Exception.Message)"
+        # Corrigir o erro de sintaxe na linha abaixo
+        Write-Log -Message "Erro ao adicionar opções: $($_.Exception.Message)" -Level Error
         return $false
     }
 }
 
+# Corrigir a linha duplicada de exportação
 Export-ModuleMember -Function Update-StatusColumns, Get-StatusFieldId, Clear-StatusOptions, Add-StatusOptions
