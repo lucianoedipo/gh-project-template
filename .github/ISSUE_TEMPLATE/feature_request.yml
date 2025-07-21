@@ -1,0 +1,56 @@
+name: 💡 Solicitação de Recurso
+description: Sugira uma ideia ou melhoria para este projeto
+title: "[FEATURE]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por sugerir uma melhoria! Adoramos receber ideias para tornar esta ferramenta mais útil.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Qual problema sua sugestão resolve?
+      description: Descreva qual problema ou limitação atual você está enfrentando
+      placeholder: "Atualmente é difícil fazer..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Solução Desejada
+      description: Descreva a solução que você gostaria
+      placeholder: "Seria útil se pudéssemos..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas Consideradas
+      description: Descreva alternativas que você considerou
+      placeholder: "Também pensei em..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Contexto Adicional
+      description: Forneça qualquer contexto adicional, exemplos de uso ou screenshots
+    validations:
+      required: false
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Prioridade Sugerida
+      description: Na sua opinião, qual a prioridade desta solicitação?
+      options:
+        - Baixa (seria legal ter)
+        - Média (melhoraria significativamente)
+        - Alta (resolve um problema importante)
+    validations:
+      required: false

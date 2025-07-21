@@ -1,0 +1,90 @@
+name: 🐛 Reportar um Bug
+description: Reporte um problema ou comportamento inesperado
+title: "[BUG]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por relatar um bug! Por favor, preencha este formulário com o máximo de informações possível.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Descrição do Bug
+      description: Uma descrição clara e concisa do problema
+      placeholder: O que aconteceu? O que você esperava que acontecesse?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Passos para Reproduzir
+      description: Como podemos reproduzir o problema?
+      placeholder: |
+        1. Execute o comando '...'
+        2. Selecione a opção '...'
+        3. Veja o erro '...'
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs e Saídas de Erro
+      description: Cole aqui qualquer mensagem de erro ou saída relevante
+      render: powershell
+    validations:
+      required: false
+
+  - type: input
+    id: ps-version
+    attributes:
+      label: Versão do PowerShell
+      description: Qual versão do PowerShell você está usando?
+      placeholder: "PowerShell 7.3.0"
+    validations:
+      required: true
+
+  - type: input
+    id: gh-version
+    attributes:
+      label: Versão do GitHub CLI
+      description: Qual versão do GitHub CLI você está usando? (Obtenha com `gh --version`)
+      placeholder: "gh version 2.26.1"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Sistema Operacional
+      description: Em qual sistema operacional o problema ocorre?
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Outro (especifique nos comentários)
+    validations:
+      required: true
+
+  - type: input
+    id: template
+    attributes:
+      label: Template Utilizado
+      description: Qual template de projeto você estava usando?
+      placeholder: "scrum-ddss-v1"
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Verificações
+      description: Antes de enviar, confirme que
+      options:
+        - label: Verifiquei que este bug não foi reportado anteriormente
+          required: true
+        - label: Estou usando a versão mais recente do script
+          required: true

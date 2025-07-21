@@ -1,0 +1,72 @@
+name: 🧩 Solicitar Novo Template
+description: Sugira um novo modelo de projeto para incluirmos
+title: "[TEMPLATE]: "
+labels: ["template", "enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por sugerir um novo template de projeto! Estes templates são o coração desta ferramenta.
+
+  - type: input
+    id: template_name
+    attributes:
+      label: Nome do Template
+      description: Como você sugere chamar este template?
+      placeholder: "kanban-desenvolvimento-v1"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Descrição do Template
+      description: Descreva o propósito e caso de uso deste template
+      placeholder: "Um template para equipes que usam Kanban com foco em..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: fields
+    attributes:
+      label: Campos Personalizados
+      description: Quais campos personalizados este template deveria incluir?
+      placeholder: |
+        - Prioridade (single_select): Alta, Média, Baixa
+        - Tempo Estimado (number): Horas estimadas para conclusão
+        - Responsável (text): Nome do responsável
+    validations:
+      required: true
+
+  - type: textarea
+    id: status_columns
+    attributes:
+      label: Colunas de Status
+      description: Quais colunas de status (workflow) este template deveria ter?
+      placeholder: |
+        - Backlog (cinza)
+        - Pronto para Iniciar (azul)
+        - Em Andamento (amarelo)
+        - Revisão (laranja)
+        - Concluído (verde)
+    validations:
+      required: true
+
+  - type: textarea
+    id: views
+    attributes:
+      label: Visualizações Sugeridas
+      description: Quais visualizações (views) seriam úteis para este template?
+      placeholder: |
+        - Visão Geral: Agrupado por Status
+        - Por Responsável: Agrupado por campo Responsável
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Contexto Adicional
+      description: Forneça qualquer contexto adicional sobre por que este template seria útil
+    validations:
+      required: false

@@ -1,0 +1,14 @@
+# Configuração central dos templates de issue
+# Referência: https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository
+
+blank_issues_enabled: false
+contact_links:
+  - name: Documentação do GitHub Project Template
+    url: https://github.com/lucianoedipo/gh-project-template/blob/main/docs
+    about: Consulte nossa documentação para ajuda e guias detalhados
+  - name: Guia de Solução de Problemas
+    url: https://github.com/lucianoedipo/gh-project-template/blob/main/docs/troubleshooting.md
+    about: Verifique soluções para problemas comuns encontrados ao usar esta ferramenta
+  - name: Guia de Autenticação
+    url: https://github.com/lucianoedipo/gh-project-template/blob/main/docs/autenticacao.md
+    about: Instruções para configurar corretamente a autenticação e permissões
