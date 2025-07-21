@@ -1,78 +1,83 @@
-# GitHub Project Template Automation
+# GitHub Project Template
 
-Este repositório contém scripts para automatizar a criação e configuração de projetos GitHub baseados em templates pré-definidos.
-
-## Visão Geral
-
-Os scripts neste repositório permitem:
-
-1. Criar novos projetos GitHub
-2. Configurar campos personalizados
-3. Configurar colunas de status (quadro Kanban)
-4. Verificar e guiar a configuração manual de visualizações (views)
+Uma ferramenta para configuração automatizada de projetos GitHub Projects com campos personalizados e status baseados em templates.
 
 ## Pré-requisitos
 
-- PowerShell 5.1 ou superior
-- [GitHub CLI](https://cli.github.com/) instalado e autenticado
-- Permissões de administrador no GitHub (pessoal ou organização)
+1. **GitHub CLI**: Você precisa ter o GitHub CLI instalado.
 
-## Guia Rápido
+   ```
+   winget install GitHub.cli
+   ```
 
-### Configuração Completa (Recomendado)
+   ou visite [cli.github.com](https://cli.github.com/) para instruções de instalação.
 
-Para criar e configurar um novo projeto do zero:
+2. **Token de Acesso com Permissões Adequadas**
+
+   ⚠️ **IMPORTANTE**: Este script requer um token de acesso pessoal com permissões específicas:
+
+   - `repo` (acesso completo aos repositórios)
+   - `admin:org` (para gerenciar projetos organizacionais)
+   - `project` (acesso aos projetos)
+
+   **Como criar um token de acesso pessoal**:
+
+   1. Acesse [GitHub > Settings > Developer settings > Personal access tokens > Tokens (classic)](https://github.com/settings/tokens)
+   2. Clique em "Generate new token" e selecione "Generate new token (classic)"
+   3. Dê um nome ao seu token (ex: "GitHub Projects Setup")
+   4. Selecione os escopos necessários: `repo`, `admin:org`, `project`
+   5. Clique em "Generate token"
+   6. **Importante**: Copie o token gerado imediatamente e guarde-o em local seguro!
+
+   **Autenticação com o token**:
+
+   ```powershell
+   # Opção 1: Autenticação interativa (recomendada para início)
+   gh auth login
+
+   # Opção 2: Autenticação direta com token
+   gh auth login --with-token < seu_arquivo_token.txt
+   ```
+
+## Uso Básico
 
 ```powershell
-.\setup-project.ps1
+# Exibir ajuda detalhada
+.\setup-project.ps1 -Help
+
+# Listar templates disponíveis
+.\setup-project.ps1 -ListSchemas
+
+# Criar um novo projeto com template específico
+.\setup-project.ps1 -title "Meu Projeto Scrum" -schemaPath ".\templates\scrum-template.json"
+
+# Usar projeto existente
+.\setup-project.ps1 -useExisting -projectNumber 123 -owner "sua-organizacao" -schemaPath ".\templates\scrum-template.json"
 ```
 
-Este script guiará você através do processo completo, desde a seleção do proprietário (você ou sua organização) até a criação e configuração do projeto.
+## Resolução de Problemas
 
-### Scripts Individuais
+Se encontrar erros de permissão durante a execução:
 
-Se preferir executar etapas específicas:
+1. Verifique se você está autenticado corretamente:
 
-1. **Criar campos personalizados**:
-
-   ```powershell
-   .\import-fields.ps1 -projectId SEU_ID_PROJETO
+   ```
+   gh auth status
    ```
 
-2. **Configurar colunas de status**:
+2. Caso já esteja autenticado, mas encontre erros de permissão, pode ser necessário gerar um novo token com as permissões corretas:
 
-   ```powershell
-   .\import-status-columns.ps1 -projectId SEU_ID_PROJETO
+   ```
+   gh auth logout
+   gh auth login
    ```
 
-3. **Verificar status das views**:
-   ```powershell
-   .\check-views.ps1 -projectId SEU_ID_PROJETO
-   ```
+3. Selecione a opção de GitHub.com e autenticação via token, inserindo um novo token com todas as permissões necessárias.
 
-## Uso com Projetos Existentes
+## Mais Informações
 
-Para configurar um projeto já existente:
+Consulte a documentação em `.\docs\` para instruções detalhadas sobre cada aspecto da ferramenta.
 
-```powershell
-# Usando seleção interativa
-.\setup-project.ps1 -useExisting
-
-# Usando ID do projeto
-.\setup-project.ps1 -projectId "PVT_kw..."
-
-# Usando número do projeto e proprietário
-.\setup-project.ps1 -owner "minha-org" -projectNumber 42
-```
-
-Isso permite aplicar o template a projetos existentes sem precisar criar um novo projeto.
-
-## Estrutura de Arquivos
-
-- `setup-project.ps1` - Script principal para criar e configurar projetos
-- `import-fields.ps1` - Configura campos personalizados
-- `import-status-columns.ps1` - Configura colunas de status (Kanban)
-- `check-views.ps1` - Verifica status das visualizações
 - `templates/` - Arquivos JSON de templates de projeto
   - `project-schema.scrum-ddss.v1.json` - Template SCRUM para equipes DDSS
 - `docs/` - Documentação detalhada
