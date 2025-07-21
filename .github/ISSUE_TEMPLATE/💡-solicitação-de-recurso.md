@@ -1,9 +1,10 @@
 ---
-name: 💡 Solicitação de Recurso
+name: "\U0001F4A1 Solicitação de Recurso"
 about: Sugira uma ideia ou melhoria para este projeto
 title: "[FEATURE]: "
 labels: enhancement
-assignees: ""
+assignees: ''
+
 ---
 
 ## Problema Atual

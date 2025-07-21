@@ -1,9 +1,10 @@
 ---
-name: 🧩 Solicitar Novo Template
+name: "\U0001F9E9 Solicitar Novo Template"
 about: Sugira um novo modelo de projeto para incluirmos
 title: "[TEMPLATE]: "
-labels: template, enhancement
-assignees: ""
+labels: enhancement
+assignees: ''
+
 ---
 
 ## Nome do Template

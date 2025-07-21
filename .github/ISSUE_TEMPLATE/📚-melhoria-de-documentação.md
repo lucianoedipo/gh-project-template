@@ -1,9 +1,10 @@
 ---
-name: 📚 Melhoria de Documentação
+name: "\U0001F4DA Melhoria de Documentação"
 about: Sugira melhorias para a documentação
 title: "[DOCS]: "
 labels: documentation
-assignees: ""
+assignees: ''
+
 ---
 
 ## Tipo de Documentação

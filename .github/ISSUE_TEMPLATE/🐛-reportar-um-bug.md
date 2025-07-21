@@ -1,9 +1,10 @@
 ---
-name: 🐛 Reportar um Bug
+name: "\U0001F41B Reportar um Bug"
 about: Reporte um problema ou comportamento inesperado
 title: "[BUG]: "
-labels: bug, triage
-assignees: ""
+labels: bug
+assignees: ''
+
 ---
 
 ## Descrição do Bug
