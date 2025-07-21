@@ -100,18 +100,9 @@ Você pode personalizar ou criar novos templates editando os arquivos JSON na pa
 
 ## Suporte
 
-Para problemas ou sugestões, crie uma issue neste repositório.
+Para problemas ou sugestões, crie uma issue neste repositório usando um dos templates disponíveis:
 
-- Opções de status (colunas do quadro)
-- Definições de visualizações (views)
-- Configuração de iterações (sprints)
-
-## Limitações Conhecidas
-
-- A API do GitHub não permite criar ou atualizar views programaticamente
-- As views precisam ser criadas manualmente conforme documentado em `docs/criar-views-manual.md`
-- Campos existentes com o mesmo nome podem causar conflitos
-
-## Suporte
-
-Para problemas ou sugestões, crie uma issue neste repositório.
+- 🐛 Reportar um Bug
+- 💡 Solicitação de Recurso
+- 📚 Melhoria de Documentação
+- 🧩 Solicitar Novo Template
