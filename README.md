@@ -1,5 +1,12 @@
 # GitHub Project Template
 
+[![PowerShell 7.x](https://img.shields.io/badge/PowerShell-7.x-blue.svg)](https://github.com/PowerShell/PowerShell)
+[![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/)
+[![GitHub CLI](https://img.shields.io/badge/GitHub%20CLI-2.0+-brightgreen.svg)](https://cli.github.com/)
+[![Status: Beta](https://img.shields.io/badge/Status-Beta-orange.svg)]()
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
+[![Made with ❤️ in PowerShell](https://img.shields.io/badge/Made%20with%20%E2%9D%A4%EF%B8%8F%20in-PowerShell-blue.svg)](https://github.com/PowerShell/PowerShell)
+
 Uma ferramenta para configuração automatizada de projetos GitHub Projects com campos personalizados e status baseados em templates.
 
 ## Pré-requisitos
@@ -97,6 +104,10 @@ Você pode personalizar ou criar novos templates editando os arquivos JSON na pa
 - As views precisam ser criadas manualmente conforme documentado em `docs/criar-views-manual.md`
 - Campos existentes com o mesmo nome podem causar conflitos
 - O comando `gh auth refresh` pode travar em alguns ambientes
+
+## Licença
+
+Este projeto está licenciado sob a [Licença Creative Commons Atribuição-NãoComercial 4.0 Internacional (CC BY-NC 4.0)](LICENSE.md).
 
 ## Suporte
 
