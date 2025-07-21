@@ -1,0 +1,29 @@
+# Configuração do Dependabot para o GitHub Project Template
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # Configuração para GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "GitHub Actions"
+      include: "scope"
+
+  # Configuração para PowerShell modules (quando utilizados via PSDepend ou PSGet)
+  # Descomente quando o projeto tiver um arquivo de dependências do PowerShell
+  # - package-ecosystem: "nuget"
+  #   directory: "/"
+  #   schedule:
+  #     interval: "monthly"
+  #   open-pull-requests-limit: 3
+  #   labels:
+  #     - "dependencies"
+  #     - "powershell"
